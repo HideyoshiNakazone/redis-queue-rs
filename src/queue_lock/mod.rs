@@ -13,17 +13,17 @@ mod tests {
     #[tokio::test]
     async fn initialize_async_queue_lock() {
         let queue_lock = super::async_queue_lock::AsyncQueueLock::new(
-            "test".to_string(),
+            "initialize_async_queue_lock".to_string(),
             initialize_async_redis().await,
             None
         );
-        assert_eq!(queue_lock.get_lock_name(), "redis-queue:test:lock".to_string());
+        assert_eq!(queue_lock.get_lock_name(), "redis-queue:initialize_async_queue_lock:lock".to_string());
     }
     
     #[tokio::test]
     async fn test_async_lock() {
         let mut queue_lock = super::async_queue_lock::AsyncQueueLock::new(
-            "test".to_string(),
+            "test_async_lock".to_string(),
             initialize_async_redis().await,
             None
         );
@@ -41,7 +41,7 @@ mod tests {
         let increment_mutex_1 = increment_mutex.clone();
         let h1 = tokio::spawn(async move {
             let mut queue_lock = super::async_queue_lock::AsyncQueueLock::new(
-                "test".to_string(),
+                "test_async_concurrent_lock".to_string(),
                 initialize_async_redis().await,
                 None
             );
@@ -61,7 +61,7 @@ mod tests {
         let h2 = tokio::spawn(async move {
             tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
             let mut queue_lock2 = super::async_queue_lock::AsyncQueueLock::new(
-                "test".to_string(),
+                "test_async_concurrent_lock".to_string(),
                 initialize_async_redis().await,
                 None
             );
@@ -85,17 +85,17 @@ mod tests {
     #[test]
     fn test_initialize_queue_lock() {
         let queue_lock = super::queue_lock::QueueLock::new(
-            "test".to_string(),
+            "test_initialize_queue_lock".to_string(),
             initialize_redis(),
             None
         );
-        assert_eq!(queue_lock.get_lock_name(), "redis-queue:test:lock".to_string());
+        assert_eq!(queue_lock.get_lock_name(), "redis-queue:test_initialize_queue_lock:lock".to_string());
     }
     
     #[test]
     fn test_lock() {
         let mut queue_lock = super::queue_lock::QueueLock::new(
-            "test".to_string(),
+            "test_lock".to_string(),
             initialize_redis(),
             None
         );
@@ -114,7 +114,7 @@ mod tests {
         let increment_mutex_1 = increment_mutex.clone();
         let h1 = std::thread::spawn(move || {
             let mut queue_lock = super::queue_lock::QueueLock::new(
-                "test".to_string(),
+                "test_concurrent_lock".to_string(),
                 initialize_redis(),
                 None
             );
@@ -135,7 +135,7 @@ mod tests {
         let h2 = std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_secs(3));
             let mut queue_lock2 = super::queue_lock::QueueLock::new(
-                "test".to_string(),
+                "test_concurrent_lock".to_string(),
                 initialize_redis(),
                 None
             );
@@ -159,20 +159,20 @@ mod tests {
     #[test]
     fn test_queue_builder() {
         let queue_lock = QueueLockBuilder::default()
-            .with_queue_name("test".to_string())
+            .with_queue_name("test_queue_builder".to_string())
             .with_redis_client(initialize_redis_client())
             .with_retry_interval(100)
             .build();
-        assert_eq!(queue_lock.get_lock_name(), "redis-queue:test:lock".to_string());
+        assert_eq!(queue_lock.get_lock_name(), "redis-queue:test_queue_builder:lock".to_string());
     }
 
     #[tokio::test]
     async fn test_async_queue_builder() {
         let queue_lock = QueueLockBuilder::default()
-            .with_queue_name("test".to_string())
+            .with_queue_name("test_async_queue_builder".to_string())
             .with_redis_client(initialize_redis_client())
             .with_retry_interval(100)
             .async_build().await;
-        assert_eq!(queue_lock.get_lock_name(), "redis-queue:test:lock".to_string());
+        assert_eq!(queue_lock.get_lock_name(), "redis-queue:test_async_queue_builder:lock".to_string());
     }
 }

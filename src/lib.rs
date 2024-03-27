@@ -1,7 +1,7 @@
-mod redis_queue;
+pub mod async_redis_queue;
+pub mod redis_queue;
 mod queue_lock;
 mod queue_state;
-mod async_redis_queue;
 mod test_utils;
 
 
@@ -14,7 +14,7 @@ mod tests {
     #[test]
     fn initialize_redis_queue() {
         RedisQueue::new(
-            "test".to_string(), 
+            "initialize_redis_queue".to_string(), 
             initialize_redis_client()
         );
     }
@@ -22,7 +22,7 @@ mod tests {
     #[test]
     fn test_push_pop_to_redis_queue() {
         let mut redis_queue = RedisQueue::new(
-            "test".to_string(), 
+            "test_push_pop_to_redis_queue".to_string(), 
             initialize_redis_client()
         );
         
@@ -36,7 +36,7 @@ mod tests {
     #[test]
     fn test_redis_queue_with_concurrent_push_pop() {   
         let redis_queue = RedisQueue::new(
-            "test".to_string(), 
+            "test_redis_queue_with_concurrent_push_pop".to_string(), 
             initialize_redis_client()
         );     
         let item = "test".to_string();
@@ -76,7 +76,7 @@ mod tests {
     #[tokio::test]
     async fn initialize_async_redis_queue() {
         AsyncRedisQueue::new(
-            "test".to_string(), 
+            "initialize_async_redis_queue".to_string(), 
             initialize_redis_client()
         ).await;
     }
@@ -84,7 +84,7 @@ mod tests {
     #[tokio::test]
     async fn test_async_push_pop_to_redis_queue() {
         let mut redis_queue = AsyncRedisQueue::new(
-            "test".to_string(), 
+            "test_async_push_pop_to_redis_queue".to_string(), 
             initialize_redis_client()
         ).await;
         
@@ -98,7 +98,7 @@ mod tests {
     #[tokio::test]
     async fn test_async_redis_queue_with_concurrent_push_pop() {   
         let redis_queue = AsyncRedisQueue::new(
-            "test".to_string(), 
+            "test_async_redis_queue_with_concurrent_push_pop".to_string(), 
             initialize_redis_client()
         ).await;     
         let item = "test".to_string();
