@@ -21,20 +21,22 @@ impl QueueLock {
             lock_identifier: None
         }
     }
-
-    pub fn lock<F>(&mut self, f: F) where F: FnOnce() {
+    pub fn lock<F, R>(&mut self, f: F) -> R 
+    where F: FnOnce() -> R {
         let lock_identifier = Uuid::new_v4().to_string();
         while !self.try_lock(lock_identifier.clone()) {
             std::thread::sleep(std::time::Duration::from_millis(self.retry_interval));
         }
         
-        f();
+        let result: R = f();
         
         self.unlock();
+
+        result
     }
 
     pub fn get_lock_name(&self) -> String {
-        format!("redis-queue-lock:{}", self.queue_name)
+        format!("redis-queue:{}:lock", self.queue_name)
     }
 
     fn try_lock(&mut self, lock_identifier: String) -> bool {
