@@ -7,5 +7,8 @@ pub fn initialize_redis() -> redis::Connection {
 }
 
 pub async fn initialize_async_redis() -> redis::aio::MultiplexedConnection {
-    initialize_redis_client().get_multiplexed_async_connection().await.unwrap() 
+    initialize_redis_client()
+        .get_multiplexed_async_connection()
+        .await
+        .unwrap()
 }
