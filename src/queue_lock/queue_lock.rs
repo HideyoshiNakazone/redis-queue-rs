@@ -1,4 +1,4 @@
-use redis::{Commands};
+use redis::{Commands, ExistenceCheck, SetOptions};
 use redis::Connection;
 use uuid::Uuid;
 
@@ -7,7 +7,6 @@ pub struct QueueLock {
     redis_connection: Connection,
     retry_interval: u64,
 
-    lock_identifier: Option<String>,
     queue_name: String
 }
 
@@ -18,7 +17,6 @@ impl QueueLock {
             redis_connection,
             retry_interval: retry_interval.unwrap_or(100),
             queue_name: queue_name.to_string(),
-            lock_identifier: None
         }
     }
     pub fn lock<F, R>(&mut self, f: F) -> R 
@@ -28,7 +26,7 @@ impl QueueLock {
             std::thread::sleep(std::time::Duration::from_millis(self.retry_interval));
         }
         
-        let result: R = f();
+        let result = f();
         
         self.unlock();
 
@@ -40,23 +38,18 @@ impl QueueLock {
     }
 
     fn try_lock(&mut self, lock_identifier: String) -> bool {
-        self.redis_connection.set::<String, String, String>(
-            self.get_lock_name(), lock_identifier.clone()
-        ).unwrap();
+        let set_options = SetOptions::default()
+            .conditional_set(ExistenceCheck::NX)
+            .get(true);
+        
+        let active_lock_identifier: String = self.redis_connection.set_options(
+            self.get_lock_name(), lock_identifier.clone(), set_options
+        ).unwrap_or("".to_string());
 
-        let active_lock_identifier: String = self.redis_connection.get(self.get_lock_name()).unwrap();
-        return if active_lock_identifier == lock_identifier {
-            self.lock_identifier = Some(lock_identifier);
-            true
-        } else {
-            false
-        }
+        return active_lock_identifier == lock_identifier;
     }
     
     fn unlock(&mut self) {
-        if self.lock_identifier.is_none() {
-            return;
-        }
         self.redis_connection.del::<String, u8>(self.get_lock_name()).unwrap();
     }
 }

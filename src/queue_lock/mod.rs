@@ -1,7 +1,6 @@
 pub mod async_queue_lock;
 pub mod queue_lock;
 pub mod queue_lock_builder;
-mod test_utils;
 
 
 // Write tests
@@ -9,7 +8,7 @@ mod test_utils;
 mod tests {
     use std::sync::{Arc};
     use crate::queue_lock::queue_lock_builder::QueueLockBuilder;
-    use crate::queue_lock::test_utils::init_redis::{initialize_async_redis, initialize_redis, initialize_redis_client};
+    use crate::test_utils::init_redis::{initialize_async_redis, initialize_redis, initialize_redis_client};
 
     #[tokio::test]
     async fn initialize_async_queue_lock() {
@@ -111,7 +110,7 @@ mod tests {
     #[test]
     fn test_concurrent_lock() {
         let increment_mutex = Arc::new(std::sync::Mutex::new(0));
-        
+
         let increment_mutex_1 = increment_mutex.clone();
         let h1 = std::thread::spawn(move || {
             let mut queue_lock = super::queue_lock::QueueLock::new(
@@ -119,7 +118,7 @@ mod tests {
                 initialize_redis(),
                 None
             );
-            
+
             queue_lock.lock(
                 || {
                     let mut increment = increment_mutex_1.lock().unwrap();
@@ -131,7 +130,7 @@ mod tests {
                 }
             );
         });
-        
+
         let increment_mutex_2 = increment_mutex.clone();
         let h2 = std::thread::spawn(move || {
             std::thread::sleep(std::time::Duration::from_secs(3));
@@ -150,13 +149,13 @@ mod tests {
                     }
                 }
             );
-    
+
         });
-        
+
         h1.join().unwrap();
         h2.join().unwrap();
     }
-    
+
     #[test]
     fn test_queue_builder() {
         let queue_lock = QueueLockBuilder::default()
@@ -166,7 +165,7 @@ mod tests {
             .build();
         assert_eq!(queue_lock.get_lock_name(), "redis-queue:test:lock".to_string());
     }
-    
+
     #[tokio::test]
     async fn test_async_queue_builder() {
         let queue_lock = QueueLockBuilder::default()
