@@ -23,15 +23,18 @@ impl AsyncQueueLock {
         }
     }
 
-    pub async fn lock<F, R>(&mut self, f: F) where F: FnOnce() -> R, R: std::future::Future<Output = ()> {
+    pub async fn lock<F, R>(&mut self, f: F) -> <R as std::future::Future>::Output
+    where F: FnOnce() -> R, R: std::future::Future {
         let lock_identifier = Uuid::new_v4().to_string();
         while !self.try_lock(lock_identifier.clone()).await {
             async_std::task::sleep(std::time::Duration::from_millis(self.retry_interval)).await;
         }
         
-        f().await;
+        let result = f().await;
         
         self.unlock().await;
+        
+        result
     }
 
     pub fn get_lock_name(&self) -> String {
