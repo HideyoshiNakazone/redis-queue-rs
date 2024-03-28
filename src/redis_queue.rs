@@ -6,29 +6,30 @@ use crate::queue_lock::queue_lock_builder::QueueLockBuilder;
 use crate::queue_state::queue_element::QueueElement;
 
 #[derive(Clone)]
-pub struct RedisQueue {
+pub struct RedisQueue<T> {
+    queue_data_type: std::marker::PhantomData<T>,
+    
     queue_name: String,
     redis_client: redis::Client,
 
     queue_lock_builder: QueueLockBuilder,
 }
 
-impl RedisQueue {
-    pub fn new(queue_name: String, redis_client: redis::Client) -> RedisQueue {
+impl<T> RedisQueue<T> 
+where T: Clone + Serialize + for<'de> Deserialize<'de> {
+    pub fn new(queue_name: String, redis_client: redis::Client) -> RedisQueue<T> {
         let queue_lock_builder = QueueLockBuilder::default()
             .with_queue_name(queue_name.clone())
             .with_redis_client(redis_client.clone());
         RedisQueue {
+            queue_data_type: std::marker::PhantomData,
             queue_name,
             queue_lock_builder,
             redis_client,
         }
     }
 
-    pub fn push<T>(&mut self, item: T)
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    pub fn push(&mut self, item: T) {
         self.get_lock().lock(move || {
             let element = QueueElement::new(item);
             self.push_element(element.clone());
@@ -37,14 +38,11 @@ impl RedisQueue {
                 self.set_first_element_id(element.get_id());
             }
 
-            self.set_last_element_id::<T>(element.get_id());
+            self.set_last_element_id(element.get_id());
         });
     }
 
-    pub fn pop<T>(&mut self) -> Option<T>
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    pub fn pop(&mut self) -> Option<T> {
         self.get_lock().lock(|| {
             let option_element_id = self.get_first_element_id();
             if option_element_id.is_none() {
@@ -53,7 +51,7 @@ impl RedisQueue {
 
             let element_id = option_element_id.unwrap();
 
-            let option_element = self.get_element::<T>(element_id.clone());
+            let option_element = self.get_element(element_id.clone());
             if option_element.is_none() {
                 return None;
             }
@@ -73,20 +71,14 @@ impl RedisQueue {
         })
     }
 
-    fn get_element<T>(&mut self, element_id: String) -> Option<QueueElement<T>>
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    fn get_element(&mut self, element_id: String) -> Option<QueueElement<T>> {
         let element_key = format!("redis-queue:{}:element:{}", self.queue_name, element_id);
         self.redis_connection()
             .get(element_key)
             .map_or(None, |data: String| serde_json::from_str(&data).ok())
     }
 
-    fn push_element<T>(&mut self, element: QueueElement<T>)
-    where
-        T: Clone + Serialize,
-    {
+    fn push_element(&mut self, element: QueueElement<T>) {
         let element_key = format!(
             "redis-queue:{}:element:{}",
             self.queue_name,
@@ -123,16 +115,13 @@ impl RedisQueue {
         self.redis_connection().get(last_element_key).ok()
     }
 
-    fn set_last_element_id<T>(&mut self, element_id: String)
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    fn set_last_element_id(&mut self, element_id: String) {
         let current_last_element_id = self.get_last_element_id();
         if current_last_element_id.is_some() {
             let current_last_element_id = current_last_element_id.unwrap();
-            let mut current_last_element = self.get_element::<T>(current_last_element_id).unwrap();
+            let mut current_last_element = self.get_element(current_last_element_id).unwrap();
             current_last_element.set_next(Some(element_id.clone()));
-            self.update_element::<T>(current_last_element);
+            self.update_element(current_last_element);
         }
 
         let last_element_key = format!("redis-queue:{}:state:last", self.queue_name);
@@ -155,10 +144,7 @@ impl RedisQueue {
             .unwrap();
     }
 
-    fn update_element<T>(&mut self, element: QueueElement<T>)
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    fn update_element(&mut self, element: QueueElement<T>) {
         let element_key = format!(
             "redis-queue:{}:element:{}",
             self.queue_name,

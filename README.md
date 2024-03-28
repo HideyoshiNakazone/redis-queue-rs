@@ -45,7 +45,7 @@ fn main() {
     let item = "test".to_string();
     
     redis_queue.push(item.clone());
-    let result = redis_queue.pop::<String>().unwrap();
+    let result = redis_queue.pop().unwrap();
 }
 ```
 
@@ -67,7 +67,7 @@ async fn main() {
     let item = "test".to_string();
 
     redis_queue.push(item.clone()).await;
-    let result = redis_queue.pop::<String>().await.unwrap();
+    let result = redis_queue.pop().await.unwrap();
 }
 ```
 
