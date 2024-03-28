@@ -33,14 +33,14 @@ jobs:
       run: |
         cargo install cargo-release
 
-    - name: Create Release - PATCH
-      if: ${{ github.event.label.name != 'bug' }}
-      run: |
-        cargo release patch \
-          --no-verify \
-          --no-confirm \
-          --verbose \
-          --execute
+#    - name: Create Release - PATCH
+#      if: ${{ github.event.label.name != 'bug' }}
+#      run: |
+#        cargo release patch \
+#          --no-verify \
+#          --no-confirm \
+#          --verbose \
+#          --execute
 
     - name: Create Release - RELEASE
       if: ${{ github.event.label.name != 'bug' }}
