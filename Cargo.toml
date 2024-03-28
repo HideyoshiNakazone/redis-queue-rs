@@ -3,7 +3,7 @@ name = "redis-queue"
 version = "0.1.0"
 edition = "2021"
 description = "Redis Queue with sync and async support for Rust"
-license = "GPLv2"
+license = "GPL-2.0"
 repository = "https://github.com/HideyoshiNakazone/redis-queue-rs.git"
 readme = "README.md"
 
