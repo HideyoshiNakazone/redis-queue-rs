@@ -9,7 +9,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  increment-version:
+  publish-new-version:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -17,31 +17,14 @@ jobs:
       with:
         toolchain: stable
         override: true
-    - name: Install Cargo Release
-      uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: cargo-release
-    - name: Bump version
-      uses: actions-rs/cargo@v1
-      with:
-        command: bump
-        args: patch --git-tag
-    - name: Push changes and tags
+    - name: Install Cargo Release and Bump version
       run: |
+        cargo install cargo-bump
+        cargo bump patch --git-tag
         git push --follow-tags
-
-  publush:
-    needs:
-      - increment-version
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: katyo/publish-crates@v2
-        with:
-          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          dry-run: true
+    - uses: actions/checkout@v3
+    - uses: katyo/publish-crates@v2
+      name: Publish
+      with:
+        registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        dry-run: true
