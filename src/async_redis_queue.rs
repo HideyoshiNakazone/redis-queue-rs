@@ -7,19 +7,23 @@ use crate::queue_lock::queue_lock_builder::QueueLockBuilder;
 use crate::queue_state::queue_element::QueueElement;
 
 #[derive(Clone)]
-pub struct AsyncRedisQueue {
+pub struct AsyncRedisQueue<T> {
+    queue_data_type: std::marker::PhantomData<T>,
+    
     queue_name: String,
     redis_connection: MultiplexedConnection,
 
     queue_lock_builder: QueueLockBuilder,
 }
 
-impl AsyncRedisQueue {
-    pub async fn new(queue_name: String, redis_client: redis::Client) -> AsyncRedisQueue {
+impl<T> AsyncRedisQueue<T>
+where T: Clone + Serialize + for<'de> Deserialize<'de> {
+    pub async fn new(queue_name: String, redis_client: redis::Client) -> AsyncRedisQueue<T> {
         let queue_lock_builder = QueueLockBuilder::default()
             .with_queue_name(queue_name.clone())
             .with_redis_client(redis_client.clone());
         AsyncRedisQueue {
+            queue_data_type: std::marker::PhantomData,
             queue_name,
             queue_lock_builder,
             redis_connection: redis_client
@@ -29,10 +33,7 @@ impl AsyncRedisQueue {
         }
     }
 
-    pub async fn push<T>(&mut self, item: T)
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    pub async fn push(&mut self, item: T) {
         self.get_lock()
             .await
             .lock(|| async move {
@@ -44,15 +45,12 @@ impl AsyncRedisQueue {
                     self.set_first_element_id(element.get_id()).await;
                 }
 
-                self.set_last_element_id::<T>(element.get_id()).await;
+                self.set_last_element_id(element.get_id()).await;
             })
             .await;
     }
 
-    pub async fn pop<T>(&mut self) -> Option<T>
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    pub async fn pop(&mut self) -> Option<T> {
         self.get_lock()
             .await
             .lock(|| async {
@@ -63,7 +61,7 @@ impl AsyncRedisQueue {
 
                 let element_id = option_element_id.unwrap();
 
-                let option_element = self.get_element::<T>(element_id.clone()).await;
+                let option_element = self.get_element(element_id.clone()).await;
                 if option_element.is_none() {
                     return None;
                 }
@@ -84,10 +82,7 @@ impl AsyncRedisQueue {
             .await
     }
 
-    async fn get_element<T>(&mut self, element_id: String) -> Option<QueueElement<T>>
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    async fn get_element(&mut self, element_id: String) -> Option<QueueElement<T>> {
         let element_key = format!("redis-queue:{}:element:{}", self.queue_name, element_id);
         self.redis_connection
             .get(element_key)
@@ -95,10 +90,7 @@ impl AsyncRedisQueue {
             .map_or(None, |data: String| serde_json::from_str(&data).ok())
     }
 
-    async fn push_element<T>(&mut self, element: QueueElement<T>)
-    where
-        T: Clone + Serialize,
-    {
+    async fn push_element(&mut self, element: QueueElement<T>) {
         let element_key = format!(
             "redis-queue:{}:element:{}",
             self.queue_name,
@@ -138,19 +130,16 @@ impl AsyncRedisQueue {
         self.redis_connection.get(last_element_key).await.ok()
     }
 
-    async fn set_last_element_id<T>(&mut self, element_id: String)
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    async fn set_last_element_id(&mut self, element_id: String) {
         let current_last_element_id = self.get_last_element_id().await;
         if current_last_element_id.is_some() {
             let current_last_element_id = current_last_element_id.unwrap();
             let mut current_last_element = self
-                .get_element::<T>(current_last_element_id)
+                .get_element(current_last_element_id)
                 .await
                 .unwrap();
             current_last_element.set_next(Some(element_id.clone()));
-            self.update_element::<T>(current_last_element).await;
+            self.update_element(current_last_element).await;
         }
 
         let last_element_key = format!("redis-queue:{}:state:last", self.queue_name);
@@ -176,10 +165,7 @@ impl AsyncRedisQueue {
             .unwrap();
     }
 
-    async fn update_element<T>(&mut self, element: QueueElement<T>)
-    where
-        T: Clone + Serialize + for<'de> Deserialize<'de>,
-    {
+    async fn update_element(&mut self, element: QueueElement<T>) {
         let element_key = format!(
             "redis-queue:{}:element:{}",
             self.queue_name,

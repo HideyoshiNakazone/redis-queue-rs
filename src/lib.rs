@@ -12,7 +12,7 @@ mod tests {
 
     #[test]
     fn initialize_redis_queue() {
-        RedisQueue::new(
+        let _: RedisQueue<String> = RedisQueue::new(
             "initialize_redis_queue".to_string(),
             initialize_redis_client(),
         );
@@ -28,7 +28,7 @@ mod tests {
         let item = "test".to_string();
 
         redis_queue.push(item.clone());
-        let result = redis_queue.pop::<String>().unwrap();
+        let result = redis_queue.pop().unwrap();
         assert_eq!(result, item);
     }
 
@@ -61,7 +61,7 @@ mod tests {
             let mut queue = redis_queue.clone();
 
             let handle = std::thread::spawn(move || {
-                let value = queue.pop::<String>();
+                let value = queue.pop();
                 assert_eq!(value.unwrap(), result);
             });
             handles.push(handle);
@@ -74,7 +74,7 @@ mod tests {
 
     #[tokio::test]
     async fn initialize_async_redis_queue() {
-        AsyncRedisQueue::new(
+        let _: AsyncRedisQueue<String> = AsyncRedisQueue::new(
             "initialize_async_redis_queue".to_string(),
             initialize_redis_client(),
         )
@@ -92,7 +92,7 @@ mod tests {
         let item = "test".to_string();
 
         redis_queue.push(item.clone()).await;
-        let result = redis_queue.pop::<String>().await.unwrap();
+        let result = redis_queue.pop().await.unwrap();
         assert_eq!(result, item);
     }
 
@@ -126,7 +126,7 @@ mod tests {
             let mut queue = redis_queue.clone();
 
             let handle = tokio::spawn(async move {
-                let value = queue.pop::<String>().await;
+                let value = queue.pop().await;
                 assert_eq!(value.unwrap(), result);
             });
             handles.push(handle);
