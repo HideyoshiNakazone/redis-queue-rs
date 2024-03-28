@@ -36,5 +36,5 @@ jobs:
     - name: Create Release
       run: |
         cargo release patch \
-          --no-verify
+          --no-verify \
           --verbose
