@@ -1,6 +1,6 @@
 [package]
 name = "redis-queue-rs"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "Redis Queue with sync and async support for Rust"
 license = "MIT"
