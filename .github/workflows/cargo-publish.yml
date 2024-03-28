@@ -37,5 +37,6 @@ jobs:
       run: |
         cargo release patch \
           --no-verify \
+          --no-confirm \
           --verbose \
           --execute
