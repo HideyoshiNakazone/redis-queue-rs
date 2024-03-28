@@ -7,41 +7,33 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  GITHUB_USER: HideyoshiNakazone
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_REPOSITORY: ${{ secret.GITHUB_REPOSITORY }}
 
 jobs:
-  increment-version:
+  publish:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
     steps:
     - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
         override: true
-    - name: Install Cargo Release
-      uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: cargo-release
-    - name: Bump version
-      uses: actions-rs/cargo@v1
-      with:
-        command: bump
-        args: patch --git-tag
-    - name: Push changes and tags
+    - name: Config Github
       run: |
-        git push --follow-tags
-
-  publush:
-    needs:
-      - increment-version
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: katyo/publish-crates@v2
-        with:
-          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          dry-run: true
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git remote set-url origin "https://$GITHUB_USER:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY"
+    - name: Login to Cargo Registry
+      run: |
+        cargo login ${{ secrets.CARGO_REGISTRY_TOKEN }}
+#    - name: Install Cargo Release
+#      run: |
+#        cargo install cargo-release
+#    - name: Create Release
+#      run: |
+#        cargo release patch \
+#          --verbose
