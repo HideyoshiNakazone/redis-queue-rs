@@ -19,9 +19,11 @@ jobs:
         override: true
     - name: Install Cargo Release and Bump version
       run: |
+        git config --global user.email "HideyoshiNakazone@users.noreply.github.com"
+        git config --global user.name "HideyoshiNakazone"
         cargo install cargo-bump
         cargo bump patch --git-tag
-        git push --follow-tags
+        git push --tags
     - uses: actions/checkout@v3
     - uses: katyo/publish-crates@v2
       name: Publish
