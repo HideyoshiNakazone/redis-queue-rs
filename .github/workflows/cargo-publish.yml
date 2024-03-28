@@ -37,4 +37,5 @@ jobs:
       run: |
         cargo release patch \
           --verbose \
-          --allow-branch HEAD
+          --allow-branch HEAD \
+          --execute
