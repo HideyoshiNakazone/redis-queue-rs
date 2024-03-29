@@ -28,3 +28,44 @@ jobs:
     - name: Run tests
       run: |
         cargo test --verbose -- --test-threads 1
+
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event.pull_request.merged == true && !contains(github.event.pull_request.labels.*.name, 'not-release')
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    permissions: write-all
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Config Github
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+
+    - name: Login to Cargo Registry
+      run: |
+        cargo login ${{ secrets.CARGO_REGISTRY_TOKEN }} --verbose
+
+    - name: Cache Cargo Release
+      id: cache-cargo-release
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo
+        key: ${{ runner.os }}-cargo-release
+
+    - name: Install Cargo Release
+      if: steps.cache-cargo-release.outputs.cache-hit != 'true'
+      run: |
+        cargo install cargo-release
+
+    - name: Create Release - PATCH
+      run: |
+        cargo release patch --push-remote "https://$GITHUB_USER:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY" \
+          --no-verify \
+          --no-confirm \
+          --verbose \
+          --execute
