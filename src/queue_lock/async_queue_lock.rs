@@ -1,5 +1,5 @@
 use redis::aio::MultiplexedConnection;
-use redis::AsyncCommands;
+use redis::{AsyncCommands, ExistenceCheck, SetOptions};
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -7,7 +7,6 @@ pub struct AsyncQueueLock {
     redis_connection: MultiplexedConnection,
     retry_interval: u64,
 
-    lock_identifier: Option<String>,
     queue_name: String,
 }
 
@@ -21,7 +20,6 @@ impl AsyncQueueLock {
             redis_connection,
             retry_interval: retry_interval.unwrap_or(100),
             queue_name: queue_name.to_string(),
-            lock_identifier: None,
         }
     }
 
@@ -47,28 +45,18 @@ impl AsyncQueueLock {
     }
 
     async fn try_lock(&mut self, lock_identifier: String) -> bool {
-        self.redis_connection
-            .set::<String, String, String>(self.get_lock_name(), lock_identifier.clone())
-            .await
-            .unwrap();
-
-        let active_lock_identifier: String = self
-            .redis_connection
-            .get(self.get_lock_name())
-            .await
-            .unwrap();
-        return if active_lock_identifier == lock_identifier {
-            self.lock_identifier = Some(lock_identifier);
-            true
-        } else {
-            false
-        };
+        let set_options = SetOptions::default()
+            .conditional_set(ExistenceCheck::NX)
+            .get(true);
+        
+        let active_lock_identifier = self.redis_connection
+            .set_options::<String, String, String>(self.get_lock_name(), lock_identifier.clone(), set_options)
+            .await.unwrap_or("".to_string());
+        
+        return active_lock_identifier == lock_identifier;
     }
 
     async fn unlock(&mut self) {
-        if self.lock_identifier.is_none() {
-            return;
-        }
         self.redis_connection
             .del::<String, u8>(self.get_lock_name())
             .await

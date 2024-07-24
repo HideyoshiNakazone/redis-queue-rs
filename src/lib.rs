@@ -39,9 +39,11 @@ mod tests {
             initialize_redis_client(),
         );
         let item = "test".to_string();
+        
+        let num_tasks = 100;
 
         let mut handles = vec![];
-        for _ in 0..10 {
+        for _ in 0..num_tasks {
             let mut queue = redis_queue.clone();
             let local_item = item.clone();
 
@@ -56,7 +58,7 @@ mod tests {
         }
 
         let mut handles = vec![];
-        for _ in 0..10 {
+        for _ in 0..num_tasks {
             let result = item.clone();
             let mut queue = redis_queue.clone();
 
@@ -104,9 +106,11 @@ mod tests {
         )
         .await;
         let item = "test".to_string();
+        
+        let num_tasks = 100;
 
         let mut handles = vec![];
-        for _ in 0..10 {
+        for _ in 0..num_tasks {
             let mut queue = redis_queue.clone();
             let local_item = item.clone();
 
@@ -121,7 +125,7 @@ mod tests {
         }
 
         let mut handles = vec![];
-        for _ in 0..10   {
+        for _ in 0..num_tasks   {
             let result = item.clone();
             let mut queue = redis_queue.clone();
 
