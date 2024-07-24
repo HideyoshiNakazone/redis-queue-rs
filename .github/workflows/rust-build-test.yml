@@ -89,4 +89,4 @@ jobs:
 
     - name: Publish
       run: |
-        cargo publish --verbose
+        cargo publish --verbose --allow-dirty
