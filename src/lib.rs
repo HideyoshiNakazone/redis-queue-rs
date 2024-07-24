@@ -121,7 +121,7 @@ mod tests {
         }
 
         let mut handles = vec![];
-        for _ in 0..10 {
+        for _ in 0..10   {
             let result = item.clone();
             let mut queue = redis_queue.clone();
 
